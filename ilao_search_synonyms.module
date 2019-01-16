@@ -1,0 +1,83 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: gdaniels
+ * Date: 1/2/19
+ * Time: 11:29 AM
+ */
+
+
+/**
+ * Implements hook_apachesolr_query_alter().
+ */
+function ilao_search_synonyms_apachesolr_query_prepare(DrupalSolrQueryInterface $query) {
+
+  $string = $query->getParams();
+
+  $taxonomy_exists = taxonomy_get_term_by_name($string['q'],'search_synonyms');
+
+  if (!empty($taxonomy_exists)) {
+    $current = current($taxonomy_exists);
+    $synonyms = strip_tags($current->description);
+    if ($current->field_synonym_type[LANGUAGE_NONE][0]['value'] == 'expand') {
+      $synonyms = str_replace(',',' OR ',$synonyms);
+      $string['q'] = $string['q'] .' OR ' .$synonyms;
+    }
+    else {
+
+   //   $synonyms = str_replace(',',' OR ',$synonyms);
+   //   $string['q'] = $string['q'] .' OR ' .$synonyms;
+      $string['q'] = $synonyms;
+    }
+
+    $query->replaceParam('q',$string['q']);
+
+  }
+  else {
+    $original2= $string['q'];
+    $stopwords= array (
+      "i","need", "help", "get", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours", "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "this", "that", "these", "those", "am", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "having", "do", "does", "did", "doing", "a", "an", "the", "and", "but", "if", "or", "because", "as", "until", "while", "of", "at", "by", "for", "with", "about", "against", "between", "into", "through", "during", "before", "after", "above", "below", "to", "from", "up", "down", "in", "out", "on", "off", "over", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "any", "both", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "s", "t", "can", "will", "just", "don", "should", "now"
+
+    );
+    $querylc = strtolower($string['q']);
+    $term_list = explode(' ',$querylc);
+   $term_list = array_diff($term_list, $stopwords);
+       $synonym_string = " ";
+    foreach($term_list as $key => $term) {
+
+      $taxonomy_exists = taxonomy_get_term_by_name($term,'search_synonyms');
+      if (!empty($taxonomy_exists)) {
+        $current = current($taxonomy_exists);
+        $synonyms = strip_tags($current->description);
+
+        if ($current->field_synonym_type[LANGUAGE_NONE][0]['value'] == 'expand') {
+          $synonym_string = $synonym_string .' OR ' .$term;
+          $synonym_string = $synonym_string .' OR ' .$synonyms;
+
+        }
+        else {
+          //   $synonyms = str_replace(',',' OR ',$synonyms);
+          //   $string['q'] = $string['q'] .' OR ' .$synonyms;
+          $synonyms = str_replace(',',' AND ',$synonyms);
+          $synonym_string = $synonym_string .' AND (' .$synonyms .')';
+
+        }
+      }
+      else {
+
+        $synonym_string = $synonym_string .' ' .$term;
+      }
+    }
+
+    $query->replaceParam('q',$synonym_string);
+
+
+  }
+
+
+
+
+
+}
+
+
