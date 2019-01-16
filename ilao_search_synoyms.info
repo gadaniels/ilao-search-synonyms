@@ -1,0 +1,5 @@
+name =  ILAO Search Synonyms
+description = I allow for the creation and use of synonyms in Solr without using the synyonyms.txt file
+package = ILAO
+version = 1.0
+core = 7.x
